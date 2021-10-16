@@ -1,0 +1,10 @@
+<ul class="flex items-center text-sm font-medium h-full">
+{% comment %} 로그인 users는 장고에서 알아서 쿠키까지 처리해주기 때문에 뷰에서 파라미터로 넘겨주지 않아도 바로 사용가능  {% endcomment %}
+    {% if user.is_authenticated %}
+        <li class="nav_link ml-8 border-b-2 border-white h-full flex items-center hover:border-gray-600"><a class="py-10 px-5" href="{% url "users:logout" %}">Log Out</a></li>
+    {% else %}
+        <li class="nav_link ml-8 border-b-2 border-white h-full flex items-center hover:border-gray-600"><a class="py-10 px-5" href="{% url "users:login" %}">Login</a></li>
+        <li class="nav_link ml-8 border-b-2 border-white h-full flex items-center hover:border-gray-600"><a href="{% url "users:signup" %}">Sign Up</a></li>
+    {% endif %}
+
+</ul>
