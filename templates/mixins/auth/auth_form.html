@@ -1,0 +1,19 @@
+{% comment %} form에 action속성 명시 안해두면 알아서 같은 페이지로 간다! 요청이 /users/login에서 오면 users/login으로 액션 넘기고
+요청이 /users/signup 에서 넘어오면 users/signup 으로 액션 넘김 {% endcomment %}
+<form method="POST" class="w-full">
+    {% csrf_token %}
+
+    
+    {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+            <span class="text-red-700 font-medium text-sm">{{error}}</span>
+        {% endfor %}
+    {% endif %}
+    
+
+    {% for field in form %}
+        {% include 'mixins/auth/form_input.html' with field=field %}
+    {% endfor %}
+
+    <button class="btn bg-red-500 text-white">{{cta}}</button>
+</form>

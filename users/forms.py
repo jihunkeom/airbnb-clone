@@ -1,11 +1,16 @@
 from django import forms
+from django.forms import widgets
+
+from rooms.models import Photo
 from . import models
 
 
 class LoginForm(forms.Form):
 
-    email = forms.EmailField()
-    password = forms.CharField(widget=forms.PasswordInput)
+    email = forms.EmailField(widget=forms.EmailInput(attrs={"placeholder": "Email"}))
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Password"})
+    )
 
     # form들을 validate&전처리하기 위한 메소드 (clean_필드명()으로 이름 작성해야 함)
     # def clean_email():
@@ -77,9 +82,29 @@ class SignUpForm(forms.ModelForm):
             "last_name",
             "email",
         )  # 모델에 있는 필드들 가져오면 자동으로 clean까지 된다!
+        widgets = {
+            "first_name": forms.TextInput(attrs={"placeholder": "First Name"}),
+            "last_name": forms.TextInput(attrs={"placeholder": "Last Name"}),
+            "email": forms.EmailInput(attrs={"placeholder": "Email"}),
+        }
 
-    password = forms.CharField(widget=forms.PasswordInput)
-    password1 = forms.CharField(widget=forms.PasswordInput, label="Confirm Password")
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Password"})
+    )
+    password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Confrim Password"})
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        try:
+            models.User.objects.get(email=email)
+            raise forms.ValidationError(
+                "User already exists with that email", code="existing user"
+            )
+
+        except models.User.DoesNotExist:
+            return email
 
     def clean_password1(self):
         password = self.cleaned_data.get("password")
@@ -93,9 +118,12 @@ class SignUpForm(forms.ModelForm):
     # 하지만 비밀번호 등 설정을 위해 오버라이딩하자
     def save(self, *args, **kwargs):
         user = super().save(commit=False)  # commit=False로 하면 객체 생성하지만 db에는 저장하지 않음
+        first_name = self.cleaned_data.get("first_name")
+        last_name = self.cleaned_data.get("last_name")
         email = self.cleaned_data.get("email")
         password = self.cleaned_data.get("password")
-
+        user.first_name = first_name
+        user.last_name = last_name
         user.username = email
         user.set_password(password)
         user.save()  # default는 commit=True

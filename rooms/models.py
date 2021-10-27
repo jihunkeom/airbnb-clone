@@ -108,3 +108,7 @@ class Room(AbstractItem):
 
     def get_absolute_url(self):
         return reverse("rooms:detail", kwargs={"pk": self.pk})  # 첫인자는 namespace
+
+    def first_photo(self):
+        (photo,) = self.photos.all()[:1]
+        return photo.file.url
