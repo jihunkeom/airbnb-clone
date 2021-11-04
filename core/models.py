@@ -1,4 +1,5 @@
 from django.db import models
+from . import managers
 
 # Create your models here.
 class TimeStampedModel(models.Model):
@@ -6,6 +7,7 @@ class TimeStampedModel(models.Model):
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    objects = managers.CustomModelManager()
 
     # 지금 이 모델은 데이터베이스에 넣기 위한 모델이 아님
     # 공통된 부분들을 다른 앱의 모델들에서 상속받게 하기 위해 만든거

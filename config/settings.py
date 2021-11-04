@@ -63,6 +63,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -156,3 +157,12 @@ EMAIL_PORT = "587"
 EMAIL_HOST_USER = os.environ.get("MAILGUN_USERNAME")
 EMAIL_HOST_PASSWORD = os.environ.get("MAILGUN_PASSWORD")
 EMAIL_FROM = "sexy-guy@sandbox49fac1fe1b984c5b87324c0f78be8c63.mailgun.org"
+
+
+# Auth
+# Login_required 데코레이터 사용할때 로그인 안되어 있으면 자동으로 아래 로그인 url로 이동!
+LOGIN_URL = "/users/login/"
+
+
+# Locale translations
+LOCALE_PATHS = (os.path.join(BASE_DIR, "locale"),)

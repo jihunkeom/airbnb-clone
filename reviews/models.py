@@ -1,4 +1,6 @@
+from django.core import validators
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from core import models as core_models
 
 # Create your models here.
@@ -6,12 +8,22 @@ class Review(core_models.TimeStampedModel):
     """Review Model Definition"""
 
     review = models.TextField()
-    accuracy = models.IntegerField()
-    communication = models.IntegerField()
-    cleanliness = models.IntegerField()
-    location = models.IntegerField()
-    check_in = models.IntegerField()
-    value = models.IntegerField()
+    accuracy = models.IntegerField(
+        validators=[MaxValueValidator(1), MaxValueValidator(5)]
+    )
+    communication = models.IntegerField(
+        validators=[MaxValueValidator(1), MaxValueValidator(5)]
+    )
+    cleanliness = models.IntegerField(
+        validators=[MaxValueValidator(1), MaxValueValidator(5)]
+    )
+    location = models.IntegerField(
+        validators=[MaxValueValidator(1), MaxValueValidator(5)]
+    )
+    check_in = models.IntegerField(
+        validators=[MaxValueValidator(1), MaxValueValidator(5)]
+    )
+    value = models.IntegerField(validators=[MaxValueValidator(1), MaxValueValidator(5)])
 
     user = models.ForeignKey(
         "users.User", on_delete=models.CASCADE, related_name="reviews"
@@ -36,3 +48,6 @@ class Review(core_models.TimeStampedModel):
         return round(avg, 2)
 
     rating_average.short_description = "AVG"
+
+    class Meta:
+        ordering = ("-created",)

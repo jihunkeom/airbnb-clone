@@ -58,37 +58,49 @@ form {
 // animation용
 @keyframes messageFadeIn {
     0% {
-      opacity: 0;
-      transform: translateY(-50px);
+        opacity: 0;
+        transform: translateY(-50px);
     }
     5% {
-      opacity: 1;
-      transform: translateY(50px);
+        opacity: 1;
+        transform: translateY(50px);
     }
     95% {
-      opacity: 1;
-      transform: translateY(50px);
+        opacity: 1;
+        transform: translateY(50px);
     }
     100% {
-      opacity: 0;
-      transform: translateY(-50px);
+        opacity: 0;
+        transform: translateY(-50px);
     }
-  }
-  
-  .message {
-    animation: messageFadeIn 2s ease-in-out forwards;
-    &.error {
-      @apply bg-red-600;
-    }
-    &.info {
-      @apply bg-blue-500;
-    }
-    &.success {
-      @apply bg-green-500;
-    }
-    &.warning {
-      @apply bg-yellow-400;
-    }
-  }
+}
+
+.message {
+animation: messageFadeIn 5s ease-in-out forwards;
+&.error {
+    @apply bg-red-600;
+}
+&.info {
+    @apply bg-blue-500;
+}
+&.success {
+    @apply bg-green-500;
+}
+&.warning {
+    @apply bg-yellow-400;
+}
+}
+
+.border-section {
+@apply border-b border-gray-400 pb-8 mt-8;
+}
+
+.cal-grid{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-gap: 10px;
+    justify-items: center;
+}
+
 
 @tailwind utilities;

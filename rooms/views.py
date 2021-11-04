@@ -1,18 +1,25 @@
 # from math import ceil
 # from django.core import paginator
 from io import BufferedIOBase
+from re import template
+from django.http import Http404
 from django.core import paginator
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.http import Http404
 from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
 
 # from django.core.paginator import Paginator, EmptyPage
 from django.utils import timezone
-from django.views.generic import ListView, DetailView, View
+from django.views.generic import ListView, DetailView, View, UpdateView, CreateView
+from django.views.generic.edit import FormView
 
 from django_countries import countries
 from . import models, forms
+from users import mixins as user_mixins
 
 # Create your views here.
 # def all_rooms(request):
@@ -138,3 +145,108 @@ class SearchView(View):
         else:
             form = forms.SearchForm()
         return render(request, "rooms/search.html", {"form": form})
+
+
+class EditRoomView(user_mixins.LoggedInOnlyView, UpdateView):
+    model = models.Room
+    template_name = "rooms/room_edit.html"
+    fields = (
+        "name",
+        "description",
+        "country",
+        "city",
+        "price",
+        "address",
+        "guests",
+        "beds",
+        "bedrooms",
+        "baths",
+        "check_in",
+        "check_out",
+        "instant_book",
+        "room_type",
+        "amenities",
+        "facilities",
+        "house_rules",
+    )
+
+    def get_object(self, queryset=None):
+        # 다른 사람의 방을 url로 타고들어가서 수정할 수 없도록
+
+        # 여기서 queryset은 위에서 정의한 model
+        room = super().get_object(queryset=queryset)
+        if room.host.pk != self.request.user.pk:
+            raise Http404()
+        return room
+
+
+class RoomPhotosView(user_mixins.LoggedInOnlyView, RoomDetail):
+    # 방에 대한 사진들 다 처리하는 뷰 (수정, 삭제 등  RoomDetail이랑 거의 동일한 형태이지만 private함!!)
+    model = models.Room
+    template_name = "rooms/room_photos.html"
+
+    def get_object(self, queryset=None):
+        room = super().get_object(queryset=queryset)
+        if room.host.pk != self.request.user.pk:
+            raise Http404()
+        return room
+
+
+@login_required()
+def delete_photo(request, room_pk, photo_pk):
+    user = request.user
+
+    try:
+        room = models.Room.objects.get(pk=room_pk)
+        if room.host.pk != user.pk:
+            messages.error(request, "Can't delete that photo")
+        else:
+            models.Photo.objects.filter(pk=photo_pk).delete()
+            messages.success(request, "Photo Deleted")
+    except models.Room.DoesNotExist:
+        return redirect(reverse("core:home"))
+
+    return redirect(reverse("rooms:photos", kwargs={"pk": room_pk}))
+
+
+class EditPhotoView(user_mixins.LoggedInOnlyView, SuccessMessageMixin, UpdateView):
+    model = models.Photo
+    template_name = "rooms/photo_edit.html"
+    # UpdateView는 자동으로 항상 pk란 이름의 인자를 찾는데 우린 room_pk랑 photo_pk란 이름으로 인자 넘겨주므로 아래 코드 필요!
+    pk_url_kwarg = "photo_pk"
+    success_message = "Photo Updated!"
+    fields = ("caption",)
+
+    def get_success_url(self):
+        room_pk = self.kwargs.get("room_pk")
+        return reverse("rooms:photos", kwargs={"pk": room_pk})
+
+
+class AddPhotoView(user_mixins.LoggedInOnlyView, FormView):
+    template_name = "rooms/photo_create.html"
+
+    # 사진을 저장하기 위해서는 사진에 해당되는 방을 정의해줘야 함. 따라서 커스텀 폼 사용해야함
+    form_class = forms.CreatePhotoForm
+
+    # form_valid 사용하면 SuccessMessageMixin 사용불가 -> 따로 직접 메세지 만들어줘야 함
+    def form_valid(self, form):
+        # 위에 form_class가 valid한지 판별하고, valid하면 pk 가져와서 form_class의 save란 메소드 실행시켜주기
+        pk = self.kwargs.get("pk")
+        form.save(pk)
+        messages.success(self.request, "Photo Uploaded")
+        return redirect(reverse("rooms:photos", kwargs={"pk": pk}))
+
+
+class CreateRoomView(user_mixins.LoggedInOnlyView, FormView):
+
+    form_class = forms.CreateRoomForm
+    template_name = "rooms/room_create.html"
+
+    def form_valid(self, form):
+        # 이전 방법이랑 다르게 방의 유저 설정했는데 꼭 이렇게 안하고 원래 방법대로 해도 됨
+        room = form.save()  # form의 save라 commit =False이구
+        room.host = self.request.user
+        room.save()  # form의 save가 아니라 commit True
+        form.save_m2m()  # amenity, facility 등 manytomany 필드들은 이 함수 적용해야 저장됨!
+        messages.success(self.request, "Room Created")
+        return redirect(reverse("rooms:detail", kwargs={"pk": room.pk}))

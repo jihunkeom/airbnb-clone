@@ -1,7 +1,8 @@
 {% if user_obj.avatar %}
-<div class="h-20 w-20 rounded-full bg-cover" style="background-image: url({{user.avatar.url}})">
+{% comment %} h랑 w 인자 안넘겨주면 자동으로 20,20으로 설정하기 {% endcomment %}
+<div class="{{h_and_w|default:'h-20 w-20'}} rounded-full bg-cover" style="background-image: url({{user.avatar.url}})">
 {% else %}
-<div class="h-20 w-20 bg-gray-700 rounded-full text-white flex justify-center items-center">
-    <span class="text-2xl">{{user_obj.first_name|first}}</span>
+<div class="{{h_and_w|default:'h-20 w-20'}} bg-gray-700 rounded-full text-white flex justify-center items-center">
+    <span class="{{text|default:'text-3xl'}}">{{user.first_name|first}}</span>
 {% endif %}
 </div>

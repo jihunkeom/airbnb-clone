@@ -1,5 +1,7 @@
 import os
 import requests
+from django.utils import translation
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, reverse
 from django.urls import reverse_lazy
 from django.http import HttpResponse
@@ -9,7 +11,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.views import PasswordChangeView
 from django.core.files.base import ContentFile
 from django.contrib import messages
-from . import forms, models
+from django.contrib.messages.views import SuccessMessageMixin
+from django.contrib.auth.decorators import login_required
+from . import forms, models, mixins
 
 
 # class LoginView(View):
@@ -33,11 +37,10 @@ from . import forms, models
 #         return render(request, "users/login.html", {"form": form})
 
 
-class LoginView(FormView):
+class LoginView(mixins.LoggedOutOnlyView, FormView):
 
     template_name = "users/login.html"
     form_class = forms.LoginForm
-    success_url = reverse_lazy("core:home")
 
     def form_valid(self, form):
         email = form.cleaned_data.get("email")
@@ -47,6 +50,13 @@ class LoginView(FormView):
             login(self.request, user)
         return super().form_valid(form)
 
+    def get_success_url(self):
+        next_arg = self.request.GET.get("next")
+        if next_arg is not None:
+            return next_arg
+        else:
+            return reverse("core:home")
+
 
 def log_out(request):
     messages.info(request, f"See you later {request.user.first_name}")
@@ -54,7 +64,7 @@ def log_out(request):
     return redirect(reverse("core:home"))
 
 
-class SignUpView(FormView):
+class SignUpView(mixins.LoggedOutOnlyView, FormView):
     template_name = "users/signup.html"
     form_class = forms.SignUpForm
     success_url = reverse_lazy("core:home")
@@ -235,7 +245,7 @@ class UserProfileView(DetailView):
     #     return context
 
 
-class UpdateProfileView(UpdateView):
+class UpdateProfileView(mixins.LoggedInOnlyView, SuccessMessageMixin, UpdateView):
     # 업데이트 성공하면 자동으로 모델에서 정의한 get_absolute_url로 보내준다!!
 
     model = models.User
@@ -250,6 +260,7 @@ class UpdateProfileView(UpdateView):
         "language",
         "currency",
     )
+    success_message = "Profile Updated!"
 
     def get_object(self, queryset=None):
         return self.request.user
@@ -258,9 +269,60 @@ class UpdateProfileView(UpdateView):
         # email칸에 들어온 입력이 유효하면 username도 이메일로 저장해주기
         email = form.cleaned_data.get("email")
         self.object.username = email
-        self.object_save()
+        self.object.save()
         return super().form_valid(form)
 
+    def get_form(self, form_class=None):
+        # 플레이스홀더 추가해주기
+        form = super().get_form(form_class=form_class)
+        form.fields["email"].widget.attrs = {"placeholder": "Email"}
+        form.fields["first_name"].widget.attrs = {"placeholder": "First Name"}
+        form.fields["last_name"].widget.attrs = {"placeholder": "Last Name"}
+        form.fields["gender"].widget.attrs = {"placeholder": "Gender"}
+        form.fields["birthday"].widget.attrs = {"placeholder": "Date of Birth"}
+        form.fields["language"].widget.attrs = {"placeholder": "Language"}
+        form.fields["currency"].widget.attrs = {"placeholder": "Currency"}
+        return form
 
-class UpdatePasswordView(PasswordChangeView):
+
+class UpdatePasswordView(
+    mixins.LoggedInOnlyView,
+    mixins.EmailLoginOnlyView,
+    SuccessMessageMixin,
+    PasswordChangeView,
+):
     template_name = "users/update-password.html"
+    success_message = "Password Updated!"
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class=form_class)
+        form.fields["old_password"].widget.attrs = {"placeholder": "Current Password"}
+        form.fields["new_password1"].widget.attrs = {"placeholder": "New Password"}
+        form.fields["new_password2"].widget.attrs = {
+            "placeholder": "Confirm New Password"
+        }
+        return form
+
+    def get_success_url(self):
+        # 비밀번호 변경 성공시 이동할 곳
+        # 이 함수 정의 안하면 자동으로 password_change_done이라는 url로 이동하게 된다!
+        return self.request.user.get_absolute_url()
+
+
+# 유저가 호스트모드인지 아닌지에 따라서 보이는 화면 구성 다르게 할건데 호스트모드 여부는 데이터베이스에 저장안해도되!!
+# -> 호스트모드 여부는 세션으로 처리 가능!!
+@login_required
+def switch_hosting(request):
+    try:
+        del request.session["is_hosting"]
+    except KeyError:
+        request.session["is_hosting"] = True
+
+    return redirect(reverse("core:home"))
+
+
+def switch_language(request):
+    lang = request.GET.get("lang", None)
+    if lang is not None:
+        request.session[translation.LANGUAGE_SESSION_KEY] = lang
+    return HttpResponse(status=200)
