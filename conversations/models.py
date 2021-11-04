@@ -1,5 +1,6 @@
 from django.db import models
 from core import models as core_models
+from core import managers as core_managers
 
 # Create your models here.
 class Conversation(core_models.TimeStampedModel):
@@ -24,6 +25,7 @@ class Conversation(core_models.TimeStampedModel):
         return self.participants.count()
 
     count_participants.short_description = "Number of Participants"
+    objects = core_managers.CustomModelManager()
 
 
 class Message(core_models.TimeStampedModel):
