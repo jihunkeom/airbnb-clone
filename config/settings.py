@@ -25,7 +25,7 @@ SECRET_KEY = "z^6je27ezgt&=ef3pn5^z*_$jn!=8be1-4@7574h4gt!wdf5ye"
 # SECURITY WARNING: don't run with debug turned on in production!
 # True로 설정되어 있으면 프로덕션 모드가 아니라 개발 모드라는 뜻!
 # 따라서 실제로 배포할 때는 이거 False로 바꿔주고 배포하자
-DEBUG = True
+DEBUG = bool(os.environ.get("DEBUG"))
 
 ALLOWED_HOSTS = []
 
@@ -89,13 +89,24 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "HOST": "RDS_HOST",
+            "NAME": "RDS_NAME",
+            "PASSWORD": "RDS_PASSWORD",
+            "PORT": "5432",
+            "USER": "RDS_USER"
+        }
+    }
 
 
 # Password validation
